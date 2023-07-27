@@ -1,0 +1,13 @@
+[package]
+name = "clitest"
+version = "0.1.0"
+edition = "2021"
+description = "Snapshot testing for command line applications"
+rust-version = "1.65"
+license = "Apache-2.0 OR MIT"
+keywords = ["cli", "test", "snapshot"]
+homepage = "https://github.com/indygreg/clitest-rs"
+repository = "https://github.com/indygreg/clitest-rs.git"
+readme = "README.md"
+
+[dependencies]
