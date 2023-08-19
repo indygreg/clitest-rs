@@ -214,6 +214,29 @@ $ myapp 1>&-
 
 ~~~
 
+#### Pipelines
+
+Pipelines are sequences of 2 or more commands separated by the operator `|`.
+
+The grammar is `command1 | command2`.
+
+The stdout of `command1` is connected to the stdin of `command2` via a pipe.
+
+The processes are spawned in the order they are defined by the pipeline.
+
+The exit status of the pipeline is the exit status of the last command.
+
+Examples:
+
+~~~
+Send stdout to stdin of another:
+
+```
+$ myapp | grep expected-output
+```
+
+~~~
+
 ### Test Case Info Block Directives
 
 Optional *code fence* *info blocks* may pass directives to the test runner
