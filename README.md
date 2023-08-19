@@ -23,6 +23,10 @@ Here's a high-level example showing the proposed syntax and some high-level feat
 ~~~
 This is a test file. This line is ignored by the test runner.
 
+The HTML processing instruction says this file and its tests should only
+run on Windows.
+<?clitest require=windows ?>
+
 The code fence below defines commands to execute.
 
 ```
@@ -32,17 +36,18 @@ MyApp Version 1.0
 Usage: myapp <action>
 ```
 
-The HTML processing instruction automatically makes the coreutils programs
-available to the test environment. This uses the pure Rust reimplementation
-of these programs from the uutils project.
-<?clitest coreutils=grep,sed ?>
+Demonstrate that we can redirect output to a file and use common
+coreutils programs `cut` and `hexdump` to effectively create a snapshot
+test of content.
 
 ```
 $ myapp hello > hello
-$ grep foo hello
-[1]
+$ cut -z -b 1-32 hello | hexdump -C
+00000000  23 20 63 6c 69 74 65 73  74 2d 72 73 0a 0a 63 6c  |# clitest-rs..cl|
+00000010  69 74 65 73 74 2d 72 73  20 61 69 6d 73 20 74 6f  |itest-rs aims to|
+00000020  00                                                |.|
+00000021
 
-$ myapp some-other-action
 ```
 
 ```
@@ -167,6 +172,48 @@ variables are set by default:
 * `USER` The value `clitest`, which may not exist on the current system.
 * ...
 
+## Principles
+
+## Simplicity and intuitiveness
+
+The test format should be simple, easy to read, and easy to understand.
+
+We base the test format on Markdown, which is well understood among the
+target developer community. We leverage features of markdown - code fences
+and HTML processing instructions - which are generally known or familiar
+to many developers.
+
+## Embrace Coreutils
+
+We embed a copy of the [uutils](https://github.com/uutils/coreutils) Rust
+implementation of GNU coreutils. This allows users to harness as little or
+much power from these common utilities (like `grep`, `sed`, and `awk`)
+for additional text processing / analysis as they want.
+
+By leaning on these common utilities we defer the onus of having to reinvent
+this complexity in our test format and test harness. Our test harness can focus
+on executing processes and not complex text stream processing.
+
+By using the Rust coreutils implementation, test execution uses a
+deterministic version of these tools, not whatever version or variant you
+have on the system. On Windows you don't need to install Cygwin, msys, or
+run in WSL to get access to these utilities.
+
+## Commitment to Backwards Compatibility
+
+We strive to not require end-users to rewrite test files when upgrading. If you
+need to spend hours updating tests when upgrading the version of this project
+you are using, we've failed.
+
+The test file format should evolve to be backwards and forwards compatible.
+
+The test execution semantics should also be highly backwards compatible.
+
+When you upgrade the version of this project you are using hopefully the
+worst thing that happens is you need to run a command to migrate to slightly
+different file syntax or accept machine proposed changes to expectations
+defined in the test files.
+
 ## TODO
 
 Here are some ideas for the test format and execution semantics that we'd
@@ -204,13 +251,6 @@ so future features don't require new syntax.
 * Command / test timeout support. How do you express that?
 * Support for delivering a signal to a process. e.g. simulate a ^C to test
   error handling.
-* Consider a processing instruction for exposing coreutils binaries (i.e.
-  embed the Rust [uutils](https://github.com/uutils/coreutils) coreutils
-  reimplementation and allow these common tools to be made available to
-  test cases). This would expose the power of `grep`, `sed`, `awk`, wc`,
-  `hexdump` and other useful text processing commands to test cases and
-  possibly enable us to defer a lot of text processing complexity to widely
-  known tools.
 * Consider semantics for automatic drift overwrites when the test runner
   executes. We want to expose a turnkey mechanism where new/different/drifted
   test output can be recorded in the original test file without humans having
