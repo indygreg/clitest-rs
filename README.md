@@ -214,6 +214,30 @@ worst thing that happens is you need to run a command to migrate to slightly
 different file syntax or accept machine proposed changes to expectations
 defined in the test files.
 
+## Embrace the Concept of the Shell Without an Actual Shell
+
+While it could be useful to execute tests in a shell (like bash, zsh,
+or even nushell), we reject the existence of an explicit shell during test
+execution (unless end-users opt into it).
+
+Practical experience with Mercurial and cram demonstrated there are too
+many sharp edges with actual shells. At the least you need a shell binary
+on every machine under test. And the shell version/features needs to behave
+the same on all systems. This can be difficult, especially on Windows.
+
+A fully embeddable shell (like Nushell) could be a viable alternative. But
+now we're externalizing knowledge of a specific shell onto our end-users.
+
+End-users are opinionated about shells. Bash. Zsh. Powershell. We don't want
+to pick sides in this debate.
+
+But shells are useful. Variables. Pipes. Redirection. Control flow and loops.
+Builtin commands (like `cd` and `echo`). Background process execution.
+
+We want to expose some of the features of shells without using an actual
+shell. Make the user think they have a shell for common functionality to
+test command invocations but don't let them juggle chainsaws.
+
 ## TODO
 
 Here are some ideas for the test format and execution semantics that we'd
