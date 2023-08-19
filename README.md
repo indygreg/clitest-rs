@@ -69,7 +69,11 @@ A `.clitest` is an expressive / literate file format to define tests that
 run executables and verify their behavior.
 
 The syntax of `.clitest` file leverages Markdown syntax conventions and
-many `.clitest` files can also be parsed / rendered as Markdown.
+many `.clitest` files can also be parsed / rendered as Markdown. But
+well-formed Markdown is not a hard requirement. (Leveraging Markdown as the
+file format has the added benefit that a project's Markdown based documentation
+*could* potentially also be executed as tests to ensure the documentation
+is accurate.)
 
 The most important part of the file format are *test cases*. These describe
 commands to execute and their expected behavior.
