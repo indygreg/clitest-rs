@@ -126,6 +126,12 @@ after the backticks or tildes, per the CommonMark specification. This
 info block content is made available to the test runner so it can influence
 behavior.
 
+~~~
+```info block content
+...
+```
+~~~
+
 Within each code fence we define a custom syntax for declaring commands
 to invoke and their expected output.
 
@@ -139,6 +145,74 @@ The initial content of each line can denote special meaning:
   If not used, stdout and stderr are merged. This syntax allows verification
   that output is written to a specific stdio file descriptor.
 * All other lines are treated as expected output from the command.
+
+### Command Strings
+
+Lines beginning with `$` declare a command string. A command string is a
+[POSIX shell](https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html)
+inspired grammar that defines how to invoke processes.
+
+Often, a command string is just the name of the program under test and its
+arguments. e.g.
+
+```
+$ myapp arg0 arg1
+```
+
+#### Redirection
+
+Process file descriptors can be controlled using the redirection grammar
+`[n]operation word`.
+
+`[n]` is an optional file descriptor. 0 is stdin, 1 is stdout, 2 is stderr. 
+
+`word` describes where to read/write from.
+
+The `<` operation reads content from the file `word` and sends it to stdin.
+
+The `>` operation redirects content from a file descriptor (default 1 / stdout)
+and writes it to the file `word`. The file is truncated after opening.
+
+The `>>` operation behaves like `>` but appends to the destination file instead
+of truncating.
+
+`<&` duplicates an input file descriptor. Default of 0 / stderr. `word` of `-`
+closes the file descriptor.
+
+`>&` duplicates an output file descriptor. Default of 1 / stdout. `word` of `-`
+closes the file descriptor.
+
+The test runner proxies the following virtual files or emulates them if they
+don't exist:
+
+* `/dev/null` - A write only file that does nothing with data written to it.
+  Typically used for redirecting output so it isn't display. e.g. `>/dev/null`
+  to redirect stdout to nothing.
+
+Examples:
+
+~~~
+Execute `myapp` and write its stdout to the file `stdout`.
+```
+$ myapp > stdout
+```
+
+Execute `myapp` and write its stderr to the file `stderr`.
+```
+$ myapp 2> stderr
+```
+
+Execute `myapp` and merge its stdout and stderr to the file `combined`.
+```
+$ myapp 1>&2 > combined
+```
+
+Execute `myapp` with stdout closed.
+```
+$ myapp 1>&-
+```
+
+~~~
 
 ### Test Case Info Block Directives
 
