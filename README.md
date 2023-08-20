@@ -408,6 +408,120 @@ so future features don't require new syntax.
 * Consider allowing test cases to execute within a shell. Maybe a shell
   implemented in pure Rust for portability.
 
+### Unresolved Grammar / Parsing Issues
+
+Assuming that command strings are denoted by lines beginning with `$` and
+expected process output is following lines, there are some ambiguities with
+parsing the expected output.
+
+How do we know we've hit the end of process output? In Mercurial and cram,
+lines indented by 2 spaces constituted output. So you could just look for
+the first non-indented line to find EOF. But we don't propose indenting
+lines. (It is annoying - if you have blank lines you need to insert empty
+lines with leading whitespace, which editors like to strip. Some editors
+may not clearly display the whitespace only lines. Behavior is not
+intuitive and not developer friendly!)
+
+You can't say an empty line indicates end of output because there could be
+empty lines in process output. You also don't want to strip trailing lines
+because that whitespace could be relevant and you want to test it is there!
+(Don't you want to know if your program starts printing an extra trailing
+newline?)
+
+We also have to consider the scenario that a command could print output
+that conflicts with our own file syntax.
+
+The following scenarios are all ambiguous:
+
+~~~
+
+Is the actual output "foo" "foo\n" or "foo\n\n"?
+```
+$ myapp
+foo
+
+$ irrelevant
+```
+
+How do we validate output beginning with "$"?
+Does the first command print nothing or "$ hello"?
+```
+$ echo '$ hello'
+$ hello
+```
+
+What about commands that print code fence delimiters?
+```
+$ echo '```'
+```
+```
+~~~
+
+Mercurial solves the no trailing newline problem by annotating the line with
+a `(no-eol)` annotation. e.g.
+
+~~~
+```
+$ echo -n hello
+hello (no-eol)
+```
+~~~
+
+For output that conflicts with our own syntax, the obvious solution is
+escaping. e.g.
+
+~~~
+```
+$ echo '$ hello'
+\$ hello
+
+$ echo '```'
+\`\`\`
+```
+~~~
+
+Experience with Mercurial tells us that escaping can be annoying. Especially
+if your program domain contains a lot of output conflicting with our syntax.
+Imagine testing a program that emits Markdown using our tool! Or imagine
+us testing this tool using its own syntax! All that escaping could be pretty
+annoying.
+
+One potential solution is alternative delimiters. For example a processing
+instruction or code fence info block could denote an alternative delimiter.
+
+~~~
+<%clitest command_delimiter=@ %>
+
+```
+@ echo '$ hello'
+$ hello
+```
+~~~
+
+Then end-users could select delimiters that make sense for their domain.
+
+This doesn't solve the problem of code fence delimiters though!
+
+Maybe we could leverage a heredoc style syntax for explicitly delimiting
+output?
+
+~~~
+```
+$ echo '```' >< EOF
+```
+EOF
+```
+~~~
+
+This could work. But it does make the file parser more complicated. Without
+this syntax you can scan the file and pair up code fence tokens to isolate
+all the lines defining code fences. Then you could parse each code fence
+later. But if you use a heredoc style syntax and have lines within the
+heredoc sharing the syntax as code fences, now your parser has to recognize
+the heredoc syntax so it knows to ignore a code fence token within a code
+fence. Not very desirable! Maybe code fence tokens deserve a one-off solution
+or escaping?
+
 ## Project History
 
 The goal of this project is to facilitate [literate testing](https://arrenbrecht.ch/testing/)
